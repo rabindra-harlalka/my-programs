@@ -5,7 +5,8 @@ recipe:
 > `gcc --std=c99 gausselim.c -o gausselim`
 > define TEST macro for running tests: `gcc --std=c99 -DTEST gausselim.c -o gausselim`
 > define PRINTDEBUG macro for printing intermediate results
- */
+> define NOMAIN macro for compiling without main()
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,8 @@ recipe:
 #endif
 
 int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting);
+int eliminate(int m, int n, double A[][n], bool do_partial_pivoting);
+int substitute(int m, int n, double A[][n], double* x);
 
 static int find_row_index_with_max_pivot(int m, int n, double A[][n], int i, int p);
 static void row_swap(int n, double A[][n], int i, int j);
@@ -44,9 +47,96 @@ void test_1()
 	assert(fabs(x[1] - 1.0) <= EPSILON);
 	assert(fabs(x[2] - 0.3333) <= EPSILON);
 	assert(fabs(x[3] - -2.0) <= EPSILON);
+
+	/* without partial pivoting */
+	double matrix_AA[4][5] = {
+		{ 0, 2, 0, 1, 0 },
+		{ 2, 2, 3, 2, -2 },
+		{ 4, -3, 0, 1, -7 },
+		{ 6, 1, -6, -5, 6 }
+	};
+
+	ret = gauss_elim(4, 5, matrix_AA, x, false);
+
+	assert(ret == 0);
+	assert(fabs(x[0] - -0.5) <= EPSILON);
+	assert(isnan(x[1]));
+	assert(isnan(x[2]));
+	assert(isnan(x[3]));
+}
+
+void test_2()
+{
+	double matrix_A[5][6] = {
+		{ 13, 4, 5, 0, 9, 101 },
+		{ 33, -2, -7, 8, 0, 3 },
+		{ 23, 32, 9, 5, 1, 7 },
+		{ 54, 34, 87, 2, 4, 66 },
+		{ -5, 6, 7, 8, 9, 10 }
+	};
+
+	double x[5];
+	int ret = gauss_elim(5, 6, matrix_A, x, true);
+
+	assert(ret == 0);
+	assert(fabs(x[0] - 1.7424) <= EPSILON);
+	assert(fabs(x[1] - -0.0149) <= EPSILON);
+	assert(fabs(x[2] - -0.5640) <= EPSILON);
+	assert(fabs(x[3] - -7.3098) <= EPSILON);
+	assert(fabs(x[4] - 9.0253) <= EPSILON);
+
+	/* without partial pivoting */
+	double matrix_AA[5][6] = {
+		{ 13, 4, 5, 0, 9, 101 },
+		{ 33, -2, -7, 8, 0, 3 },
+		{ 23, 32, 9, 5, 1, 7 },
+		{ 54, 34, 87, 2, 4, 66 },
+		{ -5, 6, 7, 8, 9, 10 }
+	};
+	ret = gauss_elim(5, 6, matrix_AA, x, false);
+
+	assert(ret == 0);
+	assert(fabs(x[0] - 1.7424) <= EPSILON);
+	assert(fabs(x[1] - -0.0149) <= EPSILON);
+	assert(fabs(x[2] - -0.5640) <= EPSILON);
+	assert(fabs(x[3] - -7.3098) <= EPSILON);
+	assert(fabs(x[4] - 9.0253) <= EPSILON);
+
+}
+
+void test_3()
+{
+	double matrix_A[][4] = {
+		{ 1, 0, -5, 0 },	// father 5 times older than child
+		{ 1, 1, 0, 99 },	// sum of parents' age is 99
+		{ 0, 1, -3.5, 0 }	// mother 3.5 times older than child
+	};
+
+	double x[3];
+	int ret = gauss_elim(3, 4, matrix_A, x, true);
+
+	assert(ret == 0);
+	assert(fabs(x[0] - 58.2353) <= EPSILON);
+	assert(fabs(x[1] - 40.7647) <= EPSILON);
+	assert(fabs(x[2] - 11.6471) <= EPSILON);
+
+	/* without partial pivoting */
+	double matrix_AA[][4] = {
+		{ 1, 0, -5, 0 },	// father 5 times older than child
+		{ 1, 1, 0, 99 },	// sum of parents' age is 99
+		{ 0, 1, -3.5, 0 }	// mother 3.5 times older than child
+	};
+	ret = gauss_elim(3, 4, matrix_AA, x, false);
+
+	assert(ret == 0);
+	assert(fabs(x[0] - 58.2353) <= EPSILON);
+	assert(fabs(x[1] - 40.7647) <= EPSILON);
+	assert(fabs(x[2] - 11.6471) <= EPSILON);
+
 }
 #endif
 
+#ifndef NOMAIN
 int main(int argc, char** argv)
 {
 	printf("******* Gaussian Elimination Program ******\n");
@@ -54,6 +144,8 @@ int main(int argc, char** argv)
 #ifdef TEST
 	printf("Running tests\n");
 	test_1();
+	test_2();
+	test_3();
 	printf("Finished running tests\n");
 #else
 	/** input: parse command line arguments **/
@@ -66,9 +158,13 @@ int main(int argc, char** argv)
 	int arg_i = 1;
 	while (strncmp(argv[arg_i], "--", 2) == 0)
 	{
-		if (strcmp(argv[1], "--nopivot") == 0)
+		if (strcmp(argv[arg_i], "--no-pivot") == 0)
 		{
 			do_partial_pivot = false;
+		}
+		else
+		{
+			printf("WARNING: unrecognized option %s\n", argv[arg_i]);
 		}
 		arg_i++;
 	}
@@ -83,8 +179,9 @@ int main(int argc, char** argv)
 	}
 	if (m < n - 1)
 	{
-		printf("ERROR: The input augmented matrix must have at least as many columns"
-				" as the co-efficient matrix\n");
+		// elimination will work, but backward substiution won't
+		printf("ERROR: The input augmented matrix must have at least as many rows as"
+				" columns in the co-efficient matrix\n");
 		return -1;
 	}
 	printf("Number of columns = %d, Number of rows = %d\n", n, m);
@@ -102,7 +199,7 @@ int main(int argc, char** argv)
 	int ret = gauss_elim(m, n, A, x, do_partial_pivot);
 	if (ret == 0)
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < sizeof(x)/sizeof(double); i++)
 		{
 			printf("x[%d] = %8.4f\n", i, x[i]);
 		}
@@ -111,6 +208,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+#endif	// NOMAIN
 
 /**
  * Given augmented matrix A of size mxn, performs Gaussian Elimination
@@ -123,10 +221,17 @@ int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting)
 	/** Dump for debugging **/
 	print_matrix(m, n, A);
 
-	bool x_solved[n];
-	memset(x_solved, false, n);
-
 	/** forward elimination **/
+	int ret = eliminate(m, n, A, do_partial_pivoting);
+
+	/** back substitution **/
+	ret &= substitute(m, n, A, x);
+
+	return ret;
+}
+
+int eliminate(int m, int n, double A[][n], bool do_partial_pivoting)
+{
 	for (int p = 0; p < m - 1; p++)
 	{
 		// 1. check if partial pivoting is needed
@@ -168,7 +273,14 @@ int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting)
 		debug_matrix(m, n, A, p, "elim");
 	}
 
-	/** back substitution **/
+	return 0;
+}
+
+int substitute(int m, int n, double A[][n], double* x)
+{
+	bool x_solved[n];
+	memset(x_solved, false, n);
+
 	for (int k = m - 1; k >= 0; k--)
 	{
 		char unsolved_index = -1;
@@ -180,7 +292,8 @@ int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting)
 			{
 				if (x_solved[j] == false)
 				{
-					if (unsolved_index >= 0) return -1;	// ERROR: solution doesn't exist, or not enough equations given!
+					// ERROR: solution doesn't exist, or not enough equations given!
+					if (unsolved_index >= 0) return -1;
 					unsolved_index = j;
 				}
 				else
