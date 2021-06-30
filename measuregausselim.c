@@ -11,8 +11,8 @@ recipe:
 #include <stdbool.h>
 #include <sys/time.h>
 
-extern int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix);
-extern int substitute(int m, int n, double A[][n], double* x);
+extern int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix, int precision);
+extern int substitute(int m, int n, double A[][n], double* x, int precision);
 
 long get_elapsed_us(struct timeval *begin)
 {
@@ -44,7 +44,7 @@ int main()
         struct timeval begin;
         gettimeofday(&begin, 0);
 
-        eliminate(n, n, A, true, true);
+        eliminate(n, n, A, true, true, 10);
 
         long time_step1 = get_elapsed_us(&begin);
 
@@ -52,7 +52,7 @@ int main()
         double x[n];
 
         gettimeofday(&begin, 0);
-        substitute(n, n, A, x);
+        substitute(n, n, A, x, 10);
 
         long time_step2 = get_elapsed_us(&begin);
 

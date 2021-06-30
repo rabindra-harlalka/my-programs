@@ -13,14 +13,15 @@ recipe:
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 #ifdef TEST
 #include <assert.h>
-#include <math.h>
 #endif
 
-int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting, bool augmented_matrix);
-int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix);
-int substitute(int m, int n, double A[][n], double* x);
+int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting, bool augmented_matrix, int precision);
+int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix, int precision);
+int substitute(int m, int n, double A[][n], double* x, int precision);
+double round_to_digits(double value, int digits);
 
 static int find_row_index_with_max_pivot(int m, int n, double A[][n], int i, int k);
 static void row_swap(int n, double A[][n], int i, int j);
@@ -45,7 +46,7 @@ void test_1()
     };
 
     double x[4];
-    int ret = gauss_elim(4, 5, matrix_A, x, true, true);
+    int ret = gauss_elim(4, 5, matrix_A, x, true, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - -0.5) <= EPSILON);
@@ -61,7 +62,7 @@ void test_1()
         { 6, 1, -6, -5, 6 }
     };
 
-    ret = gauss_elim(4, 5, matrix_AA, x, false, true);
+    ret = gauss_elim(4, 5, matrix_AA, x, false, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - -0.5) <= EPSILON);
@@ -81,7 +82,7 @@ void test_2()
     };
 
     double x[5];
-    int ret = gauss_elim(5, 6, matrix_A, x, true, true);
+    int ret = gauss_elim(5, 6, matrix_A, x, true, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - 1.7424) <= EPSILON);
@@ -98,7 +99,7 @@ void test_2()
         { 54, 34, 87, 2, 4, 66 },
         { -5, 6, 7, 8, 9, 10 }
     };
-    ret = gauss_elim(5, 6, matrix_AA, x, false, true);
+    ret = gauss_elim(5, 6, matrix_AA, x, false, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - 1.7424) <= EPSILON);
@@ -118,7 +119,7 @@ void test_3()
     };
 
     double x[3];
-    int ret = gauss_elim(3, 4, matrix_A, x, true, true);
+    int ret = gauss_elim(3, 4, matrix_A, x, true, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - 58.2353) <= EPSILON);
@@ -131,7 +132,7 @@ void test_3()
         { 1, 1, 0, 99 },    // sum of parents' age is 99
         { 0, 1, -3.5, 0 }   // mother 3.5 times older than child
     };
-    ret = gauss_elim(3, 4, matrix_AA, x, false, true);
+    ret = gauss_elim(3, 4, matrix_AA, x, false, true, 10);
 
     assert(ret == 0);
     assert(fabs(x[0] - 58.2353) <= EPSILON);
@@ -181,8 +182,9 @@ int main(int argc, char** argv)
         arg_i++;
     }
 
-    int n = atoi(argv[arg_i]);
-    int elements_start = arg_i + 1;
+    int precision = atoi(argv[arg_i]);
+    int n = atoi(argv[arg_i + 1]);
+    int elements_start = arg_i + 2;
     int m = (argc - elements_start) / n;
     if (n < 1 || m < 1)
     {
@@ -200,7 +202,7 @@ int main(int argc, char** argv)
 
     /** run **/
     double x[n - 1];
-    int ret = gauss_elim(m, n, A, x, do_partial_pivot, augmented_matrix);
+    int ret = gauss_elim(m, n, A, x, do_partial_pivot, augmented_matrix, precision);
     if (ret == 0)
     {
         printf("\nOutput\n");
@@ -208,7 +210,7 @@ int main(int argc, char** argv)
         {
             for (int i = 0; i < sizeof(x)/sizeof(double); i++)
             {
-                printf("x[%d] = %8.4f\n", i, x[i]);
+                printf("x[%d] = %8.10f\n", i, x[i]);
             }
         }
         else
@@ -228,21 +230,21 @@ int main(int argc, char** argv)
  * result in the given array x.
  * Partial pivoting is performed to avoid pitfalls, if opted.
  */
-int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting, bool augmented_matrix)
+int gauss_elim(int m, int n, double A[][n], double* x, bool do_partial_pivoting, bool augmented_matrix, int precision)
 {
     /** Dump for debugging **/
     debug_matrix(m, n, A);
 
     /** forward elimination **/
-    int ret = eliminate(m, n, A, do_partial_pivoting, augmented_matrix);
+    int ret = eliminate(m, n, A, do_partial_pivoting, augmented_matrix, precision);
 
     /** back substitution **/
-    if (augmented_matrix) ret |= substitute(m, n, A, x);
+    if (augmented_matrix) ret |= substitute(m, n, A, x, precision);
 
     return ret;
 }
 
-int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix)
+int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmented_matrix, int precision)
 {
     int numCoeffCols = augmented_matrix ? n - 1 : n;
     int numPivots = (m > numCoeffCols) ? numCoeffCols : (m - 1);
@@ -264,7 +266,7 @@ int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmen
         for (int i = k + 1; i < m; i++) // for all rows below the pivot row Rp
         {
             // b. round-off error
-            if (do_partial_pivoting == true && abs(pivot) < abs(A[i][k]))
+            if (do_partial_pivoting == true && fabs(pivot) < fabs(A[i][k]))
             {
                 row_swap(n, A, k, i);
                 pivot = A[k][k];    // update the pivot because we have swapped
@@ -275,12 +277,13 @@ int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmen
             if (A[i][k] == 0) continue;
 
             // 2. eliminate
-            double multiplier = A[i][k] / pivot;    // division operation
+            double multiplier = round_to_digits(A[i][k] / pivot, precision);    // division operation
 
             A[i][k] = 0;    // set A[i][k] to zero directly
             for (int j = k + 1; j < n; j++) // rest of the columns
             {
-                A[i][j] -= A[k][j] * multiplier;    // subtraction and multiplication operations
+                A[i][j] -= round_to_digits(A[k][j] * multiplier, precision);    // subtraction and multiplication operations
+                A[i][j] = round_to_digits(A[i][j], precision);
             }
         }
 
@@ -290,7 +293,7 @@ int eliminate(int m, int n, double A[][n], bool do_partial_pivoting, bool augmen
     return 0;
 }
 
-int substitute(int m, int n, double A[][n], double* x)
+int substitute(int m, int n, double A[][n], double* x, int precision)
 {
     bool x_solved[n];
     memset(x_solved, false, n);
@@ -306,7 +309,7 @@ int substitute(int m, int n, double A[][n], double* x)
             }
             else
             {
-                print_error("ERROR: non-zero b %8.4f for zero row %d.. inconsistent system.\n", b, i);
+                print_error("ERROR: non-zero b %8.10f for zero row %d.. inconsistent system.\n", b, i);
                 return -2;
             }
         }
@@ -331,18 +334,29 @@ int substitute(int m, int n, double A[][n], double* x)
                 }
                 else
                 {
-                    b -= A[i][j] * x[j];
+                    b -= round_to_digits(A[i][j] * x[j], precision);
+                    b = round_to_digits(b, precision);
                 }
             }
         }
         if (unsolved_index >= 0)
         {
-            x[unsolved_index] = b / A[i][unsolved_index];
+            x[unsolved_index] = round_to_digits(b / A[i][unsolved_index], precision);
             x_solved[unsolved_index] = true;
         }
     }
 
     return 0;
+}
+
+// https://stackoverflow.com/a/13094362
+double round_to_digits(double value, int digits)
+{
+    if (value == 0.0) // otherwise it will return 'nan' due to the log10() of zero
+        return 0.0;
+
+    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
+    return round(value * factor) / factor;
 }
 
 /**
@@ -421,7 +435,7 @@ void print_matrix(int m, int n, double A[][n])
         printf("[%d]: ", i);
         for (int j = 0; j < n; j++)
         {
-            printf("%8.4f ", A[i][j]);
+            printf("%8.10f ", A[i][j]);
         }
         printf("\n");
     }
