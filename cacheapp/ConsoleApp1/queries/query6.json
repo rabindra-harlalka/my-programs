@@ -1,0 +1,15 @@
+[
+  {
+    "$match": [
+      { "name": { "$regex": "Beach" } },
+      { "property_type": "House" }
+    ]
+  },
+  {
+    "$project": {
+      "_id": 0,
+      "name": 1,
+      "property_type": 2
+    }
+  }
+]

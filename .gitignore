@@ -54,3 +54,6 @@ dkms.conf
 # Visual Studio
 .vs/
 out/
+bin/
+obj/
+*.user
