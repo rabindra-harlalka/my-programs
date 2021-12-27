@@ -124,6 +124,8 @@ namespace MongoDBQueryCache
                         // store result in cache
                         var docJson = document.ToJson(/*new JsonWriterSettings {OutputMode = JsonOutputMode.RelaxedExtendedJson}*/);
                         _queryResultCache.Store(docJson, queryId, out var evicted1, out var evictedResultId);
+                        // when result is evicted, query should be evicted otherwise result set will be incomplete
+                        _queryCache.Remove($"$.QueryId = {queryId}");
                         if (evicted1)
                         {
                             //Console.WriteLine($"Result {evictedResultId} evicted from cache.");
