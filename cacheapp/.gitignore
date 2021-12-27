@@ -1,9 +1,9 @@
-.local
+.local/
 
 ./Library/Caches/Homebrew
 
-./data
+.dotnet/
 
-.dotnet
+.nuget/
 
-.nuget
+.vscode/

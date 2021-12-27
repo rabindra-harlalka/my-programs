@@ -83,43 +83,101 @@ dotnet /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query1.json
 Query cache hit: False
 Query returned 794 items.
-Time elapsed: 2367 ms.
+Time elapsed: 2395 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query2.json
 Query cache hit: True
 Query returned 606 items.
-Time elapsed: 91 ms.
+Time elapsed: 77 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query3.json
-Query cache hit: True
-Query returned 606 items.
-Time elapsed: 70 ms.
+Query cache hit: False
+Query 1 evicted from cache.
+Evicted all the 794 results belonging to query 1.
+983 results evicted from cache.
+Query returned 1983 items.
+Time elapsed: 819 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query4.json
-Query cache hit: True
+Query cache hit: False
+Query 2 evicted from cache.
+Evicted all the 1000 results belonging to query 2.
 Query returned 50 items.
-Time elapsed: 16 ms.
+Time elapsed: 150 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query5.json
 Query cache hit: True
 Query returned 50 items.
-Time elapsed: 16 ms.
+Time elapsed: 5 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query7.json
 Query cache hit: False
-Query 1 evicted from cache.
-Evicted all the 794 results belonging to query 1.
+Query 3 evicted from cache.
+Evicted all the 50 results belonging to query 3.
 Query returned 608 items.
-Time elapsed: 647 ms.
+Time elapsed: 478 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query8.json
+Query cache hit: True
+WARN: result document 3223 doesn't contain beds.
+Query returned 19 items.
+Time elapsed: 13 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query9.json
+Query cache hit: False
+Query 4 evicted from cache.
+Evicted all the 608 results belonging to query 4.
+Query returned 0 items.
+Time elapsed: 148 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query10.json
+Query cache hit: False
+Query 5 evicted from cache.
+Evicted all the 0 results belonging to query 5.
+4506 results evicted from cache.
+Query returned 5506 items.
+Time elapsed: 2122 ms.
 ================================================================================
 Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query1.json
-Query cache hit: True
-Query returned 185 items.
-Time elapsed: 25 ms.
+Query cache hit: False
+Query 6 evicted from cache.
+Evicted all the 1000 results belonging to query 6.
+Query returned 794 items.
+Time elapsed: 615 ms.
 ================================================================================
-Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query1.json
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query4.json
 Query cache hit: True
-Query returned 185 items.
-Time elapsed: 19 ms.
+Query returned 50 items.
+Time elapsed: 9 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query8.json
+Query cache hit: False
+Query 7 evicted from cache.
+Evicted all the 794 results belonging to query 7.
+Query returned 19 items.
+Time elapsed: 146 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query3.json
+Query cache hit: False
+Query 8 evicted from cache.
+Evicted all the 19 results belonging to query 8.
+983 results evicted from cache.
+Query returned 1983 items.
+Time elapsed: 797 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query9.json
+Query cache hit: False
+Query 9 evicted from cache.
+Evicted all the 1000 results belonging to query 9.
+Query returned 0 items.
+Time elapsed: 264 ms.
+================================================================================
+Reading the input queries file /Users/saryakumar/github/my-programs/cacheapp/ConsoleApp1/bin/Debug/net5.0/queries/query10.json
+Query cache hit: False
+Query 10 evicted from cache.
+Evicted all the 0 results belonging to query 10.
+4506 results evicted from cache.
+Query returned 5506 items.
+Time elapsed: 2204 ms.
 ================================================================================
 ```
