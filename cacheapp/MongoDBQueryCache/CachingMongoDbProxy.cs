@@ -85,6 +85,18 @@ namespace MongoDBQueryCache
 
             // check query hit/miss in cache
             bool hit = _queryCache.CheckHitOrMiss(query, out var queryCacheItem);
+            if (hit && filename != queryCacheItem.QueryFilename)
+            {
+                // make sure that cached query has all the attributes projected that appear in the match expressions
+                var queryRewriter = new MongoDBQueryParser();
+                var parsedNewQuery = queryRewriter.ParseQuery(query);
+                var parsedCachedQuery = queryRewriter.ParseQuery(queryCacheItem.QueryJsonString);
+                var attributesInBinaryExpressions = BinaryExpression.BuildFromTree(parsedNewQuery.ExpressionTree.Root)
+                    .Where(_ => _.Type is BinaryExpression.ExpressionType.Simple).Select(_ => _.LeftOperand.Value).ToList();
+                var allExpressionAttributesProjected = parsedCachedQuery.ProjectedAttributes.Intersect(attributesInBinaryExpressions)
+                    .SequenceEqual(attributesInBinaryExpressions);
+                hit = allExpressionAttributesProjected;
+            }
             Console.WriteLine("Query cache hit: {0}{1}", hit, hit ? $" query id is {queryCacheItem.Id} ({queryCacheItem.QueryFilename})" : null);
             if (hit)
             {
