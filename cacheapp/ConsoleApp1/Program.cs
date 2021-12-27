@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace MongoDBCacheApp
     {
         private static IMongoDBProxy _mongoDbProxy;
 
-        private static readonly string _mongoDBConnectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNSTRING");
+        private static readonly string _mongoDBConnectionString = Environment.GetEnvironmentVariable("MONGODB_CONN_STRING");
         private static readonly string _databaseName = "sample_airbnb";
         private static readonly string _collectionName = "listingsAndReviews";
 
@@ -44,7 +45,7 @@ namespace MongoDBCacheApp
                     return;
             }
 
-            _mongoDbProxy = new CachingMongoDbProxy(_mongoDBConnectionString, _databaseName, _collectionName);
+            _mongoDbProxy = new CachingMongoDbProxy(_mongoDBConnectionString, _databaseName, _collectionName, 1, 1000);
 
             foreach (var query in batch)
             {
@@ -60,11 +61,17 @@ namespace MongoDBCacheApp
 
             var queryString = await File.ReadAllTextAsync(queryJsonFilePath);
 
+            var stopwatch = Stopwatch.StartNew();
             var count = 0;
             await foreach (var result in _mongoDbProxy.ExecQueryAsync(queryString))
             {
-                Console.WriteLine($"{++count}: {result}");
+                count++;
+                //Console.WriteLine($"{++count}: {result}");
             }
+            stopwatch.Stop();
+            Console.WriteLine($"Query returned {count} items.");
+            Console.WriteLine($"Time elapsed: {stopwatch.ElapsedMilliseconds} ms.");
+            Console.WriteLine(new string('=', 80));
         }
     }
 }

@@ -3,12 +3,16 @@
     public class QueryCacheItem : CacheItem
     {
         public string QueryJsonString { get; }
-        public int Timestamp { get; }
 
-        public QueryCacheItem(int id, string queryJsonString, int timestamp) : base(id)
+        public QueryCacheItem(int id, string queryJsonString, int timestamp)
+            : base(id, timestamp)
         {
             QueryJsonString = queryJsonString;
-            Timestamp = timestamp;
+        }
+
+        public override CacheItem UpdateTimestamp(int timestamp)
+        {
+            return new QueryCacheItem(Id, QueryJsonString, timestamp);
         }
     }
 }

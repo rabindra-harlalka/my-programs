@@ -5,14 +5,15 @@ namespace MongoDBQueryCache
 {
     public class QueryCache : LocalPersistentCache<QueryCacheItem>
     {
-        public QueryCache(ILiteDatabase liteDatabase) : base("queries", liteDatabase)
+        public QueryCache(ILiteDatabase liteDatabase, int cacheCapacity)
+            : base("queries", liteDatabase, cacheCapacity)
         {
         }
 
-        public int Store(string query)
+        public int Store(string query, out bool evicted, out int evictedItemId)
         {
             var id = NextId;
-            Store(new QueryCacheItem(id, query, NextTimestamp));
+            Store(new QueryCacheItem(id, query, NextTimestamp), out evicted, out evictedItemId);
             return id;
         }
 

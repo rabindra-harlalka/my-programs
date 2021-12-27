@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using LiteDB;
 using MongoDB.Bson;
@@ -18,18 +19,19 @@ namespace MongoDBQueryCache
         private readonly QueryResultCache _queryResultCache;
         private readonly ILiteDatabase _liteDb;
 
-        public CachingMongoDbProxy(string mongoDbConnectionString, string databaseName, string collectionName)
+        public CachingMongoDbProxy(string mongoDbConnectionString, string databaseName, string collectionName,
+            int queryCacheCapacity, int resultCacheCapacity)
         {
             var settings = MongoClientSettings.FromConnectionString(mongoDbConnectionString);
             var client = new MongoClient(settings);
-            var database = client.GetDatabase(databaseName);
+            var remoteDatabase = client.GetDatabase(databaseName);
+            _mongoCollection = remoteDatabase.GetCollection<BsonDocument>(collectionName);
 
             _liteDb = OpenDatabase(@"data/cache_app.db");
-            _queryCache = new QueryCache(_liteDb);
-            _queryResultCache = new QueryResultCache(_liteDb);
+            _queryCache = new QueryCache(_liteDb, queryCacheCapacity);
+            _queryResultCache = new QueryResultCache(_liteDb, resultCacheCapacity);
             _queryCache.Clear();
             _queryResultCache.Clear();
-            _mongoCollection = database.GetCollection<BsonDocument>(collectionName);
         }
 
         public static ILiteDatabase OpenDatabase(string dbFilePath)
@@ -77,16 +79,18 @@ namespace MongoDBQueryCache
 
             // check query hit/miss in cache
             bool hit = _queryCache.CheckHitOrMiss(query, out var queryCacheItem);
+            //hit = false;
             Console.WriteLine("Query cache hit: {0}", hit);
             if (hit)
             {
+                _queryCache.UpdateAccessTime(queryCacheItem.Id);
                 // get result from cache
-                foreach (var result in _queryResultCache.Load()
-                    //.Where(_ => _.QueryId == queryCacheItem.Id)
-                    .Where(_ => ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument)))
-                    .Select(_ => _.ResultDocument)) // TODO: drop the attributes that the query didn't ask for
+                foreach (var result in _queryResultCache.Load($"$.QueryId = {queryCacheItem.Id}")
+                    .Where(_ => ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument))))
+                    //.Select(_ => _.ResultDocument)) // TODO: drop the attributes that the query didn't ask for
                 {
-                    yield return result;
+                    _queryResultCache.UpdateAccessTime(result.Id);
+                    yield return result.ResultDocument;
                 }
             }
             else
@@ -98,7 +102,14 @@ namespace MongoDBQueryCache
                 var result = _mongoCollection.Aggregate<BsonDocument>(pipelineDefinition);
 
                 // store query in query cache
-                var queryId = _queryCache.Store(query);
+                var queryId = _queryCache.Store(query, out var evicted, out var evictedQueryId);
+                if (evicted)
+                {
+                    Console.WriteLine($"Query {evictedQueryId} evicted from cache.");
+                    // if query has been evicted, evict the results too
+                    var numRemoved = _queryResultCache.Remove($"$.QueryId = {evictedQueryId}");
+                    Console.WriteLine($"Evicted all the {numRemoved} results belonging to query {evictedQueryId}.");
+                }
 
                 while (await result.MoveNextAsync())
                 {
@@ -106,7 +117,11 @@ namespace MongoDBQueryCache
                     {
                         // store result in cache
                         var docJson = document.ToJson(/*new JsonWriterSettings {OutputMode = JsonOutputMode.RelaxedExtendedJson}*/);
-                        _queryResultCache.Store(docJson, queryId);
+                        _queryResultCache.Store(docJson, queryId, out var evicted1, out var evictedResultId);
+                        if (evicted1)
+                        {
+                            Console.WriteLine($"Result {evictedResultId} evicted from cache.");
+                        }
                         yield return docJson;
                     }
                 }

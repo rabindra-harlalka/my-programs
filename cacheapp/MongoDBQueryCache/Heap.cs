@@ -16,7 +16,7 @@ namespace MongoDBQueryCache
         {
         }
 
-        public MinHeap(T[] items, IComparer<T> comparer) : base((parent, child) => MinHeapComparer(parent, child, comparer))
+        public MinHeap(T[] items, IComparer<T> comparer) : base(items, (parent, child) => MinHeapComparer(parent, child, comparer))
         {
         }
 
@@ -40,13 +40,13 @@ namespace MongoDBQueryCache
 
         public T Root => Count > 0 ? _store[0] : default(T);
 
-        public Heap(Func<T, T, bool> heapPropertyComparator)
+        protected Heap(Func<T, T, bool> heapPropertyComparator)
         {
             _store = new List<T>();
             _heapPropertyComparer = heapPropertyComparator;
         }
 
-        public Heap(T[] items, Func<T, T, bool> heapPropertyComparator)
+        protected Heap(T[] items, Func<T, T, bool> heapPropertyComparator)
         {
             _store = new List<T>(items);
             _heapPropertyComparer = heapPropertyComparator;
@@ -64,7 +64,7 @@ namespace MongoDBQueryCache
             if (Count < 2) return;
             // no of leaf nodes = ceil(n/2); so non-leaf nodes are 0 .. ceil(n/2) - 1.
             // simpler way to look at it  is: parent of last item
-            for (int i = Parent(Count - 1); i >= 0; i--)
+            for (var i = Parent(Count - 1); i >= 0; i--)
             {
                 Heapify(i);
             }
@@ -107,7 +107,7 @@ namespace MongoDBQueryCache
         public void Insert(T item)
         {
             _store.Add(item);
-            HeapifyUp(Count - 1/*, _store.Last*/);
+            HeapifyUp(Count - 1);
         }
 
         private void Swap(int i, int j)
@@ -132,7 +132,7 @@ namespace MongoDBQueryCache
         {
             if (i == 0) return;
             var node = _store[i];
-            // traverse up the tree and swap wherever the heap property is not satsified
+            // traverse up the tree and swap wherever the heap property is not satisfied
             var parentNode = _store[Parent(i)];
             while (i > 0 && !_heapPropertyComparer(parentNode, node))
             {
