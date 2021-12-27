@@ -45,7 +45,7 @@ namespace MongoDBCacheApp
                     return;
             }
 
-            _mongoDbProxy = new CachingMongoDbProxy(_mongoDBConnectionString, _databaseName, _collectionName, 3, 2000);
+            _mongoDbProxy = new CachingMongoDbProxy(_mongoDBConnectionString, _databaseName, _collectionName, 3, 5000);
 
             foreach (var query in batch)
             {

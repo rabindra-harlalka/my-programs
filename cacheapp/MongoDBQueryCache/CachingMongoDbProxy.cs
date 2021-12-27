@@ -62,7 +62,7 @@ namespace MongoDBQueryCache
             var name = subTree.Children[0].Value;
             if (!resultDocument.Contains(name))
             {
-                Console.WriteLine($"WARN: result document {resultId} doesn't contain {name}.");
+                // Console.WriteLine($"WARN: result document {resultId} doesn't contain {name}.");
                 return false;
             }
             var value =  resultDocument[name].ToString();
