@@ -7,3 +7,5 @@
 .nuget/
 
 .vscode/
+
+.data/
