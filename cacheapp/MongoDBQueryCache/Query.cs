@@ -43,8 +43,9 @@ namespace MongoDBQueryCache
                 var incomingParent = incomingExpression.Operator.Parent;
                 while (myParent != null && incomingParent != null)
                 {
-                    if (myParent.Value != incomingParent.Value && myParent.Value == "$and" &&
-                        myParent.Children.Length != incomingParent.Children.Length) return false;
+                    if (myParent.Value != incomingParent.Value && myParent.Value == "$and") return false;
+                    if (myParent.Value != incomingParent.Value && myParent.Children.Length != incomingParent.Children.Length &&
+                        (myParent.Value == "$and" || incomingParent.Value == "$and")) return false;
 
                     myParent = myParent.Parent;
                     incomingParent = incomingParent.Parent;

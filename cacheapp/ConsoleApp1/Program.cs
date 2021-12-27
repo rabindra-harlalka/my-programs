@@ -63,7 +63,7 @@ namespace MongoDBCacheApp
 
             var stopwatch = Stopwatch.StartNew();
             var count = 0;
-            await foreach (var result in _mongoDbProxy.ExecQueryAsync(queryString))
+            await foreach (var result in _mongoDbProxy.ExecQueryAsync(queryString, Path.GetFileName(queryJsonFilePath)))
             {
                 count++;
                 //Console.WriteLine($"{++count}: {result}");

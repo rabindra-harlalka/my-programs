@@ -79,19 +79,20 @@ namespace MongoDBQueryCache
             return node.Value is "$and" or "$or" or "=" or "$regex";
         }
 
-        public async IAsyncEnumerable<string> ExecQueryAsync(string query)
+        public async IAsyncEnumerable<string> ExecQueryAsync(string query, string filename)
         {
             var queryParsed = new MongoDBQueryParser().ParseQuery(query);
 
             // check query hit/miss in cache
             bool hit = _queryCache.CheckHitOrMiss(query, out var queryCacheItem);
-            Console.WriteLine("Query cache hit: {0}{1}", hit, hit ? $" query id is {queryCacheItem.Id}" : null);
+            Console.WriteLine("Query cache hit: {0}{1}", hit, hit ? $" query id is {queryCacheItem.Id} ({queryCacheItem.QueryFilename})" : null);
             if (hit)
             {
                 _queryCache.UpdateAccessTime(queryCacheItem.Id);
                 // get result from cache
                 foreach (var result in _queryResultCache.Load($"$.QueryId = {queryCacheItem.Id}")
                     .Where(_ =>
+                        filename == queryCacheItem.QueryFilename ||
                         ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument), _.Id)))
                 {
                     _queryResultCache.UpdateAccessTime(result.Id);
@@ -107,7 +108,7 @@ namespace MongoDBQueryCache
                 var result = _mongoCollection.Aggregate<BsonDocument>(pipelineDefinition);
 
                 // store query in query cache
-                var queryId = _queryCache.Store(query, out var evicted, out var evictedQueryId);
+                var queryId = _queryCache.Store(query, filename, out var evicted, out var evictedQueryId);
                 if (evicted)
                 {
                     Console.WriteLine($"Query {evictedQueryId} evicted from cache.");

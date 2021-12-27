@@ -10,10 +10,10 @@ namespace MongoDBQueryCache
         {
         }
 
-        public int Store(string query, out bool evicted, out int evictedItemId)
+        public int Store(string query, string filename, out bool evicted, out int evictedItemId)
         {
             var id = NextId;
-            Store(new QueryCacheItem(id, query, NextTimestamp), out evicted, out evictedItemId);
+            Store(new QueryCacheItem(id, query, filename, NextTimestamp), out evicted, out evictedItemId);
             return id;
         }
 
