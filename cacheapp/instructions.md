@@ -1,13 +1,13 @@
 # MongoDB Cache Installations Instructions
 
-## Install on Mac
-
+## Install
+Install .NET SDK 5 if you don't have already. The Makefile included with this program can do it for you.
 ```
 make install
 ```
 
 ## Verify
-
+Verify that you have dotnet installed properly.
 ```
 make verify
 ```
@@ -43,7 +43,7 @@ To install additional .NET runtimes or SDKs:
 ```
 
 ## Build
-
+Compile the program.
 ```
 make build
 ```
@@ -69,12 +69,12 @@ Time Elapsed 00:00:01.32
 ```
 
 ## Run
-
+Run the program.
 ```
 make run
 ```
 
-## Logs
+## Output
 
 Once you use the `make run` command then the results should be displayed as follows: 
 
