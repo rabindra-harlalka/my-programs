@@ -1,0 +1,31 @@
+[
+  {
+    "$match": {
+      "$and": [
+        {
+          "$or": [
+            { "bedrooms": 3 },
+            { "beds": 5 },
+            { "guests_included": 6 }
+          ] 
+        },
+        {
+          "$and": [
+            { "name": { "$regex": "Beach" } },
+            { "property_type": "House" }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "$project": {
+      "_id": 0,
+      "name": 1,
+      "property_type": 2,
+      "beds": 3,
+      "bedrooms": 4,
+      "guests_included": 5 
+    }
+  }
+]
