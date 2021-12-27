@@ -13,6 +13,3 @@ query8.json
 query3.json
 query9.json
 query10.json
-
-
-
