@@ -1,6 +1,6 @@
 [
   {
-    "$match": { "room_type": "Private room" }
+    "$match": { "accommodates": "4" }
   },
   {
     "$project": {

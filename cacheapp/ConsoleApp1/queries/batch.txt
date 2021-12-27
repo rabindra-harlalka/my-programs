@@ -5,6 +5,14 @@ query4.json
 query5.json
 query7.json
 query8.json
+query9.json
+query10.json
 query1.json
 query4.json
-query7.json
+query8.json
+query3.json
+query9.json
+query10.json
+
+
+
