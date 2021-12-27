@@ -14,6 +14,7 @@ To check if a subsequent query is covered by a cached query, we check if the cac
 ## Flow
 1. Parse the query. The logic resides in `MongoDBQueryCache.MongoDBQueryParser::ParseQuery()`. One important result of parsing is an expression tree. To keep things simple, we consider only a limited set of query operators such as `$and`, `$or`, `$regex`, etc.
 ![expression tree](./images/expression_tree.png?raw=true "Expression Tree")
+
 2. Next, we check if the query is already satisified by an existing query cached locally. We load all the cached queries and see if we can find one that satisfies (or "covers") the new query. This logic resides in `MongoDBQueryCache.Query::Covers()`.
 
    a) the logic is not exhaustive enough to find satisfiability for any combination of queries, but has been designed to at least work well with the queries considered for this assignment. For example, it can identify correctly cases where the new query has two clauses connected by `$and`, and the cached query has the same two clauses connected by `$or`.
@@ -22,7 +23,7 @@ To check if a subsequent query is covered by a cached query, we check if the cac
    
    c) the key idea we rely on to check if a query is covered is to build binary expression objects out of expression tree and then check that all the simple expressions are present in the cached query and that the compound queries (`$and` and `$or`) are same or cached is more relaxed ($or) than new ($and).
 
-   ![expression tree](./images/binary_expressions.png?raw=true "Binary Expressions")
+   ![Binary Expressions](./images/binary_expressions.png?raw=true "Binary Expressions")
 
 3. If a matching query is not found (cache miss), then we execute query on the remote server (MongoDB cloud). The result of the query is stored in the result cache and the query itself is stored in the query cache (more details later).
 4. On the other hand, if a matching query is found (cache hit), then we fetch all the result records from the result cache whose query id equals the matching query id. Next each result record is evaluated against the expression tree of the new query to check if it satisfies the expression. This is important so that in case of cached query not being identical to the new query, irrelevant result records are discarded. The logic for this resides in `MongoDBQueryCache.CachingMongoDbProxy::ResultSatisfiesCondition()`.
@@ -31,10 +32,12 @@ To check if a subsequent query is covered by a cached query, we check if the cac
 We use LiteDB, a serverless database delivered as a small library. LiteDB is a non-SQL database. We have two caches - `a query cache` and `a result cache`.
 
 The `Query cache` table : 
-![expression tree](./images/query_cache.png?raw=true "Query Cache")
+
+![Query Cache](./images/query_cache.png?raw=true "Query Cache")
 
 The `Results cache` table : 
-![expression tree](./images/result_cache.png?raw=true "Results Cache")
+
+![Results Cache](./images/result_cache.png?raw=true "Results Cache")
 
 ### LRU policy implementation
 - We have implemented min-heap for LRU. The min-heap is keyed by timestamp. When an item as inserted in the cache, we put the timestamp of insertion.
