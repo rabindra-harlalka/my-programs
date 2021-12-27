@@ -85,8 +85,7 @@ namespace MongoDBQueryCache
 
             // check query hit/miss in cache
             bool hit = _queryCache.CheckHitOrMiss(query, out var queryCacheItem);
-            //hit = false;
-            Console.WriteLine("Query cache hit: {0}", hit);
+            Console.WriteLine("Query cache hit: {0}{1}", hit, hit ? $" query id is {queryCacheItem.Id}" : null);
             if (hit)
             {
                 _queryCache.UpdateAccessTime(queryCacheItem.Id);
@@ -94,7 +93,6 @@ namespace MongoDBQueryCache
                 foreach (var result in _queryResultCache.Load($"$.QueryId = {queryCacheItem.Id}")
                     .Where(_ =>
                         ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument), _.Id)))
-                    //.Select(_ => _.ResultDocument)) // TODO: drop the attributes that the query didn't ask for
                 {
                     _queryResultCache.UpdateAccessTime(result.Id);
                     yield return result.ResultDocument;
