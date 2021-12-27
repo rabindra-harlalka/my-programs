@@ -48,18 +48,24 @@ namespace MongoDBQueryCache
 
         public void Close() => _liteDb.Dispose();
 
-        private static bool ResultSatisfiesCondition(Node subTree, BsonDocument resultDocument)
+        private static bool ResultSatisfiesCondition(Node subTree, BsonDocument resultDocument, int resultId)
         {
             Debug.Assert(IsOperatorNode(subTree));
 
             var op = subTree.Value;
             if (op is "$and" or "$or")
             {
-                var hits = subTree.Children.Select(_ => ResultSatisfiesCondition(_, resultDocument));
+                var hits = subTree.Children.Select(_ => ResultSatisfiesCondition(_, resultDocument, resultId));
                 return subTree.Value is "$and" ? hits.All(_ => _ is true) : hits.Any(_ => _ is true);
             }
 
-            var value = resultDocument[subTree.Children[0].Value].ToString();
+            var name = subTree.Children[0].Value;
+            if (!resultDocument.Contains(name))
+            {
+                Console.WriteLine($"WARN: result document {resultId} doesn't contain {name}.");
+                return false;
+            }
+            var value =  resultDocument[name].ToString();
             return op switch
             {
                 "=" => value == subTree.Children[1].Value,
@@ -86,7 +92,8 @@ namespace MongoDBQueryCache
                 _queryCache.UpdateAccessTime(queryCacheItem.Id);
                 // get result from cache
                 foreach (var result in _queryResultCache.Load($"$.QueryId = {queryCacheItem.Id}")
-                    .Where(_ => ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument))))
+                    .Where(_ =>
+                        ResultSatisfiesCondition(queryParsed.ExpressionTree.Root.Children[0], BsonDocument.Parse(_.ResultDocument), _.Id)))
                     //.Select(_ => _.ResultDocument)) // TODO: drop the attributes that the query didn't ask for
                 {
                     _queryResultCache.UpdateAccessTime(result.Id);
@@ -111,6 +118,7 @@ namespace MongoDBQueryCache
                     Console.WriteLine($"Evicted all the {numRemoved} results belonging to query {evictedQueryId}.");
                 }
 
+                var resultEvictedCount = 0;
                 while (await result.MoveNextAsync())
                 {
                     foreach (var document in result.Current)
@@ -120,11 +128,13 @@ namespace MongoDBQueryCache
                         _queryResultCache.Store(docJson, queryId, out var evicted1, out var evictedResultId);
                         if (evicted1)
                         {
-                            Console.WriteLine($"Result {evictedResultId} evicted from cache.");
+                            //Console.WriteLine($"Result {evictedResultId} evicted from cache.");
+                            resultEvictedCount++;
                         }
                         yield return docJson;
                     }
                 }
+                if (resultEvictedCount > 0) Console.WriteLine($"{resultEvictedCount} results evicted from cache.");
             }
         }
     }
