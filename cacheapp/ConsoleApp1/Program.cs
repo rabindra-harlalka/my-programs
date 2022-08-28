@@ -12,7 +12,7 @@ namespace MongoDBCacheApp
     {
         private static IMongoDBProxy _mongoDbProxy;
 
-        private static readonly string _mongoDBConnectionString = "mongodb+srv://mongodb-010:32EE9xuVdBOhSyRU@sda-group-010.7x6rk.mongodb.net/sample_airbnb?retryWrites=true&w=majority";
+        private static readonly string _mongoDBConnectionString = Environment.GetEnvironmentVariable("MONGO_DB_CONNSTRING");
         private static readonly string _databaseName = "sample_airbnb";
         private static readonly string _collectionName = "listingsAndReviews";
 
