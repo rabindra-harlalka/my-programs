@@ -9,6 +9,7 @@
 #from pyspark.streaming.kafka import KafkaUtils
 #import json
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
 
 # https://sparkbyexamples.com/pyspark/pyspark-what-is-sparksession/
 spark = SparkSession.builder.master("local") \
@@ -22,10 +23,12 @@ df = spark \
   .format("kafka") \
   .option("kafka.bootstrap.servers", "kafka:9092") \
   .option("subscribe", "httpd_access_log") \
-  .option("startingOffsets", "earliest") \
   .load()
-#  .option("includeHeaders", "true") \
-#df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
 
 # https://stackoverflow.com/a/41492614
-df.writeStream.format("console").start().awaitTermination()
+# https://www.databricks.com/blog/2017/05/08/event-time-aggregation-watermarking-apache-sparks-structured-streaming.html
+df.selectExpr("timestamp", "CAST(value AS STRING)") \
+  .withColumn('resp_code', regexp_extract(col('value'), 'HTTP/1.1" (\d{3})', 1)) \
+  .withWatermark("timestamp", "1 minute") \
+  .groupBy(window('timestamp', '1 minute'), 'resp_code') \
+  .count().writeStream.format("console").start().awaitTermination()
